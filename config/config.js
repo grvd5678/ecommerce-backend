@@ -1,0 +1,40 @@
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const envFile = process.env.NODE_ENV === 'production'
+  ? '.env.production'
+  : process.env.NODE_ENV === 'test'
+    ? '.env.test'
+    : '.env';
+
+dotenv.config({ path: path.resolve(__dirname, `../${envFile}`) });
+
+const config = {
+  port: process.env.PORT || 5000,
+  mongoUri: process.env.MONGODB_URI,
+  jwtSecret: process.env.JWT_SECRET,
+  nodeEnv: process.env.NODE_ENV || 'development',
+  emailFrom: process.env.EMAIL_FROM,
+  emailHost: process.env.EMAIL_HOST,
+  emailPort: process.env.EMAIL_PORT,
+  emailUser: process.env.EMAIL_USER,
+  emailPass: process.env.EMAIL_PASS,
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+  stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+  rateLimitWindow: 15 * 60 * 1000,
+  rateLimitMax: process.env.NODE_ENV === 'production' ? 100 : 1000,
+  dbConnectionTimeout: 5000,
+  dbSocketTimeout: 45000,
+};
+
+const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+  throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+}
+
+export default config;
