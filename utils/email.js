@@ -5,12 +5,12 @@ let transporter = null;
 const getTransporter = () => {
   if (!transporter) {
     transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
+      host: 'smtp.sendgrid.net',
+      port: 587,
+      secure: false, // false for 587
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: 'apikey', // Literally the string 'apikey'
+        pass: process.env.EMAIL_PASS // Your SendGrid API Key
       }
     });
   }
