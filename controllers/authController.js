@@ -121,6 +121,7 @@ export const changePassword = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
+    console.log('Forgot password requested for:', email); // Log 1
 
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: 'No account found with this email' });
@@ -128,14 +129,15 @@ export const forgotPassword = async (req, res) => {
     const otp = generateOTP();
     user.otp = { code: otp, expiresAt: new Date(Date.now() + 10 * 60 * 1000) };
     await user.save();
+    console.log('OTP saved to database'); // Log 2
 
-    await sendOTPEmail(email, user.name, otp).catch(err => {
-      console.error('OTP email failed:', err.message);
-      console.log(`⚠️  EMAIL FAILED - Password Reset OTP for ${email}: ${otp}`);
-    });
+    console.log('Attempting to send OTP email...'); // Log 3
+    await sendOTPEmail(email, user.name, otp);
+    console.log('OTP email function called successfully'); // Log 4
 
     res.json({ message: 'OTP sent to your email.', email });
   } catch (error) {
+    console.error('Error in forgotPassword:', error); // Critical Log
     res.status(500).json({ message: error.message });
   }
 };
