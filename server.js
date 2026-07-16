@@ -22,6 +22,9 @@ import chatRoutes from './routes/chat.js';
 
 export const app = express();
 
+// Trust the proxy (Render uses a proxy)
+app.set('trust proxy', 1);
+
 connectDB();
 
 setupSwagger(app);
