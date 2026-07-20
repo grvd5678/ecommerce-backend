@@ -78,6 +78,15 @@ app.get("/ready", async (req, res) => {
   }
 });
 
+app.get("/version", (req, res) => {
+  res.json({
+    status: "ok",
+    app: "ecommerce-api",
+    deploy: "temporary-version-check",
+    route: "/version",
+  });
+});
+
 app.use(globalErrorHandler);
 
 console.log("--- SERVER IS RUNNING AND LOGGING ---");
