@@ -13,6 +13,10 @@ const envFile =
 
 dotenv.config({ path: path.resolve(__dirname, `../${envFile}`) });
 
+const envEmailUser = process.env.EMAIL_USER ? process.env.EMAIL_USER.trim() : "";
+const envEmailPass = process.env.EMAIL_PASS ? process.env.EMAIL_PASS.trim() : "";
+const isSendGridUser = envEmailUser.toLowerCase() === "apikey";
+
 const config = {
   port: process.env.PORT || 5000,
   mongoUri: process.env.MONGODB_URI,
@@ -21,8 +25,8 @@ const config = {
   emailFrom: process.env.EMAIL_FROM,
   emailHost: process.env.EMAIL_HOST,
   emailPort: process.env.EMAIL_PORT,
-  emailUser: process.env.EMAIL_USER,
-  emailPass: process.env.EMAIL_PASS,
+  emailUser: envEmailUser,
+  emailPass: envEmailPass,
   stripeSecretKey: process.env.STRIPE_SECRET_KEY,
   stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
   rateLimitWindow: 15 * 60 * 1000,
@@ -33,10 +37,10 @@ const config = {
 
 const requiredEnvVars = ["MONGODB_URI", "JWT_SECRET"];
 if (process.env.NODE_ENV === "production") {
-  requiredEnvVars.push("EMAIL_FROM", "EMAIL_PORT", "EMAIL_USER", "EMAIL_PASS");
+  requiredEnvVars.push("EMAIL_FROM", "EMAIL_USER", "EMAIL_PASS");
 
-  if (process.env.EMAIL_USER !== "apikey") {
-    requiredEnvVars.push("EMAIL_HOST");
+  if (!isSendGridUser) {
+    requiredEnvVars.push("EMAIL_HOST", "EMAIL_PORT");
   }
 }
 

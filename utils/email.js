@@ -1,15 +1,19 @@
 import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 import config from "../config/config.js";
 
 let transporter = null;
+
+const isSendGrid = config.emailUser === "apikey";
 
 const validateEmailConfig = () => {
   const missing = [];
   if (!config.emailUser) missing.push("EMAIL_USER");
   if (!config.emailPass) missing.push("EMAIL_PASS");
-  if (!config.emailHost && config.emailUser !== "apikey")
-    missing.push("EMAIL_HOST");
-  if (!config.emailPort) missing.push("EMAIL_PORT");
+  if (config.emailUser !== "apikey") {
+    if (!config.emailHost) missing.push("EMAIL_HOST");
+    if (!config.emailPort) missing.push("EMAIL_PORT");
+  }
   if (missing.length) {
     throw new Error(`Missing required email config: ${missing.join(", ")}`);
   }
@@ -83,10 +87,28 @@ const getTransporter = () => {
   return transporter;
 };
 
+const initSendGrid = () => {
+  sgMail.setApiKey(config.emailPass);
+};
+
 const sendEmail = async (to, subject, html) => {
   try {
     console.log("--- Email Sending Started ---");
     console.log("Recipient:", to);
+
+    if (isSendGrid) {
+      initSendGrid();
+      console.log("Using SendGrid API for email delivery.");
+      const msg = {
+        to,
+        from: config.emailFrom || config.emailUser,
+        subject,
+        html,
+      };
+      const [response] = await sgMail.send(msg);
+      console.log("--- Email Sent Successfully via SendGrid ---", response.headers);
+      return response;
+    }
 
     const transporter = getTransporter();
     console.log("Transporter retrieved.");
@@ -152,6 +174,10 @@ export const sendOrderConfirmation = (email, name, order) => {
   return sendEmail(email, "Order Confirmed", html);
 };
 export const verifyEmailTransporter = async () => {
+  if (isSendGrid) {
+    initSendGrid();
+    return true;
+  }
   const transporter = getTransporter();
   await transporter.verify();
   return true;
