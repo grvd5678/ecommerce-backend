@@ -72,9 +72,9 @@ app.get("/", (req, res) => {
 app.get("/ready", async (req, res) => {
   try {
     await verifyEmailTransporter();
-    res.json({ status: "ok", smtp: "ok" });
+    res.json({ status: "ok", email: "ok" });
   } catch (error) {
-    res.status(503).json({ status: "error", smtp: error.message });
+    res.status(503).json({ status: "error", email: error.message });
   }
 });
 

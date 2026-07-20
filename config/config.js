@@ -33,13 +33,7 @@ const config = {
 
 const requiredEnvVars = ["MONGODB_URI", "JWT_SECRET"];
 if (process.env.NODE_ENV === "production") {
-  requiredEnvVars.push(
-    "EMAIL_FROM",
-    "EMAIL_HOST",
-    "EMAIL_PORT",
-    "EMAIL_USER",
-    "EMAIL_PASS",
-  );
+  requiredEnvVars.push("EMAIL_FROM", "EMAIL_PASS");
 }
 
 const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
