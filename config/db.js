@@ -1,6 +1,5 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
-import crypto from 'crypto';
 
 const connectDB = async () => {
   try {
