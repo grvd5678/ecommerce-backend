@@ -1,233 +1,248 @@
-# 🚀 E-Commerce Backend API
+# ShopHub — E-Commerce Backend API
 
-Full-featured REST API for e-commerce application built with Node.js, Express, and MongoDB.
+Full-featured REST API for the ShopHub e-commerce platform, built with Node.js, Express, and MongoDB Atlas. Deployed live on Railway.
 
-## 🛠 Tech Stack
+🔗 **Live API:** `https://ecommerce-backend-production-bb31.up.railway.app/api`
 
-- **Runtime:** Node.js
-- **Framework:** Express.js
-- **Database:** MongoDB + Mongoose
-- **Authentication:** JWT + bcrypt
-- **Security:** helmet, cors, express-rate-limit
+---
 
-## 📦 Installation
+## Tech Stack
 
-```bash
-npm install
-```
+- **Runtime:** Node.js 20
+- **Framework:** Express.js (ES Modules)
+- **Database:** MongoDB Atlas + Mongoose
+- **Authentication:** JWT + bcrypt + OTP email verification
+- **Email:** SendGrid (`@sendgrid/mail`)
+- **Payments:** Razorpay + Stripe
+- **AI Chat:** Google Gemini API
+- **Security:** helmet, cors, express-rate-limit, CSRF protection
+- **Deployment:** Railway + nixpacks
 
-## ⚙️ Environment Variables
+---
 
-Create `.env` file:
-
-```env
-PORT=5000
-MONGODB_URI=mongodb://localhost:27017/ecommerce
-JWT_SECRET=<your_jwt_secret>
-NODE_ENV=development
-```
-
-## 🗄️ Database Setup
-
-1. Install MongoDB locally or use MongoDB Atlas
-2. Update `MONGODB_URI` in `.env`
-3. Seed database with sample products:
-
-```bash
-node seed.js
-```
-
-## 🚀 Run Server
-
-Development mode (with nodemon):
-```bash
-npm run dev
-```
-
-Production mode:
-```bash
-npm start
-```
-
-Server runs on: `http://localhost:5000`
-
-## 📡 API Endpoints
-
-### Authentication
-```
-POST   /api/auth/register    - Register new user
-POST   /api/auth/login       - Login user
-GET    /api/auth/me          - Get current user (protected)
-```
-
-### Products
-```
-GET    /api/products         - Get all products
-GET    /api/products/:id     - Get single product
-POST   /api/products         - Create product (admin only)
-PUT    /api/products/:id     - Update product (admin only)
-DELETE /api/products/:id     - Delete product (admin only)
-```
-
-### Orders
-```
-POST   /api/orders           - Create order (protected)
-GET    /api/orders           - Get user's orders (protected)
-GET    /api/orders/:id       - Get single order (protected)
-```
-
-### Cart
-```
-GET    /api/cart             - Get user's cart (protected)
-POST   /api/cart             - Add item to cart (protected)
-PUT    /api/cart             - Update cart item quantity (protected)
-DELETE /api/cart/:productId  - Remove item from cart (protected)
-DELETE /api/cart             - Clear cart (protected)
-```
-
-### Reviews
-```
-GET    /api/reviews/:productId - Get product reviews
-POST   /api/reviews/:productId - Add review (protected)
-PUT    /api/reviews/:id        - Update review (protected)
-DELETE /api/reviews/:id        - Delete review (protected)
-```
-
-### Payment
-```
-POST   /api/payment/create-intent - Create payment intent (protected)
-POST   /api/payment/confirm       - Confirm payment (protected)
-```
-
-### Admin Orders
-```
-GET    /api/orders/admin/all      - Get all orders (admin only)
-PUT    /api/orders/:id/status     - Update order status (admin only)
-```
-
-## 🔐 Authentication
-
-Include JWT token in headers:
-```
-Authorization: Bearer <your_token>
-```
-
-## 📝 Example Requests
-
-### Register User
-```json
-POST /api/auth/register
-{
-  "name": "John Doe",
-  "email": "<user_email>",
-  "password": "<user_password>"
-}
-```
-
-### Login
-```json
-POST /api/auth/login
-{
-  "email": "<user_email>",
-  "password": "<user_password>"
-}
-```
-
-### Create Order
-```json
-POST /api/orders
-Headers: Authorization: Bearer <token>
-{
-  "items": [
-    {
-      "product": "product_id",
-      "name": "Product Name",
-      "price": 99.99,
-      "quantity": 2
-    }
-  ],
-  "shippingAddress": {
-    "name": "John Doe",
-    "email": "john@example.com",
-    "phone": "1234567890",
-    "address": "123 Main St"
-  },
-  "paymentInfo": {
-    "cardNumber": "<card_number>"
-  },
-  "subtotal": 199.98,
-  "tax": 9.99,
-  "shipping": 40,
-  "total": 249.97
-}
-```
-
-## 🔒 Security Features
-
-- Password hashing with bcrypt
-- JWT authentication
-- Rate limiting (100 requests per 15 minutes)
-- Helmet for HTTP headers security
-- CORS enabled
-- Input validation with Mongoose
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 ecommerce-backend/
 ├── config/
-│   └── db.js              # Database connection
+│   ├── db.js               # MongoDB connection
+│   └── config.js           # Env var validation & config object
 ├── controllers/
-│   ├── authController.js  # Auth logic
+│   ├── authController.js
 │   ├── productController.js
-│   └── orderController.js
+│   ├── orderController.js
+│   ├── cartController.js
+│   ├── reviewController.js
+│   ├── paymentController.js
+│   ├── couponController.js
+│   ├── chatController.js
+│   ├── engagementController.js
+│   └── productFilterController.js
 ├── middleware/
-│   └── auth.js            # JWT verification
+│   ├── auth.js             # JWT protect + admin guard
+│   ├── validate.js         # Joi schema validation
+│   └── csrfProtection.js
 ├── models/
 │   ├── User.js
-│   ├── Product.js
-│   └── Order.js
+│   ├── AdvancedProduct.js
+│   ├── Order.js
+│   ├── Cart.js
+│   ├── Review.js
+│   ├── Category.js
+│   ├── Coupon.js
+│   └── StockNotification.js
 ├── routes/
 │   ├── auth.js
 │   ├── products.js
-│   └── orders.js
-├── .env
-├── .gitignore
-├── server.js              # Entry point
-├── seed.js                # Database seeder
+│   ├── orders.js
+│   ├── cart.js
+│   ├── reviews.js
+│   ├── admin.js
+│   ├── payment.js
+│   ├── coupons.js
+│   ├── chat.js
+│   ├── engagement.js
+│   └── filterRoutes.js
+├── utils/
+│   └── email.js            # SendGrid email helpers
+├── tests/
+│   └── orderFlow.test.js
+├── server.js               # Entry point
+├── seed.js                 # DB seeder (11 products)
+├── nixpacks.toml           # Railway build config (Node 20)
+├── railway.json
 └── package.json
 ```
 
-## 🧪 Testing with Postman
+---
 
-1. Import endpoints into Postman
-2. Register a user
-3. Login to get JWT token
-4. Add token to Authorization header
-5. Test protected routes
+## API Endpoints (40 total)
 
-## 🎯 Interview Talking Points
+### Auth `/api/auth`
+```
+POST   /register           Register + send OTP email
+POST   /verify-otp         Verify OTP to activate account
+POST   /resend-otp         Resend OTP
+POST   /login              Login, returns JWT
+POST   /forgot-password    Send password reset OTP
+POST   /reset-password     Reset password with OTP
+PUT    /change-password    Change password (protected)
+GET    /me                 Get current user (protected)
+```
 
-**Performance:**
-> "I used Mongoose for schema validation and middleware hooks for password hashing, ensuring data integrity at the model level."
+### Products `/api/products`
+```
+GET    /                   List all products (filter, sort, paginate)
+GET    /categories         Get all categories
+GET    /categories/counts  Get product count per category
+GET    /:id                Get single product
+GET    /:id/similar        Get similar products
+POST   /                   Create product (admin)
+PUT    /:id                Update product (admin)
+DELETE /:id                Delete product (admin)
+```
 
-**Security:**
-> "Implemented JWT for stateless authentication, bcrypt for password hashing, and rate limiting to prevent brute force attacks."
+### Orders `/api/orders`
+```
+POST   /                   Create order (protected)
+GET    /                   Get my orders (protected)
+GET    /admin/all          Get all orders (admin)
+GET    /:id                Get single order (protected)
+PUT    /:id/cancel         Cancel order (protected)
+PUT    /:id/status         Update order status (admin)
+```
 
-**Architecture:**
-> "Followed MVC pattern with separate controllers, models, and routes for maintainability and scalability."
+### Cart `/api/cart`
+```
+GET    /                   Get cart (protected)
+POST   /                   Add item (protected)
+PUT    /                   Update quantity (protected)
+DELETE /:productId         Remove item (protected)
+DELETE /                   Clear cart (protected)
+```
 
-**Production-Ready:**
-> "Added error handling, input validation, and security middleware like helmet and CORS for production deployment."
+### Reviews `/api/reviews`
+```
+GET    /:productId         Get product reviews
+POST   /:productId         Add review (protected)
+PUT    /:id                Update review (protected)
+PUT    /:id/helpful        Toggle helpful (protected)
+DELETE /:id                Delete review (protected)
+```
 
-## 🚀 Next Steps
+### Admin `/api/admin`
+```
+GET    /users              List all users (admin)
+PUT    /users/:id/role     Update user role (admin)
+DELETE /users/:id          Delete user (admin)
+```
 
-- [ ] Connect frontend to backend
-- [ ] Add payment integration (Stripe)
-- [ ] Add image upload (Cloudinary)
-- [ ] Add email notifications
-- [ ] Deploy to Heroku/Railway
+### Payment `/api/payment`
+```
+POST   /create-order       Create Razorpay order (protected)
+POST   /verify             Verify payment signature (protected)
+```
 
-## 📄 License
+### Other
+```
+POST   /api/coupons/validate       Validate coupon code (protected)
+POST   /api/chat                   AI chat via Gemini (CSRF protected)
+POST   /api/engagement/notify/:id  Subscribe to stock notification
+GET    /api/engagement/recommendations/:id  Get recommendations
+GET    /api/filter/filter          Advanced product filtering
+```
+
+---
+
+## MongoDB Collections (8)
+
+| Collection | Purpose |
+|---|---|
+| users | Auth, roles, OTP |
+| advancedproducts | Product catalog |
+| orders | Order management |
+| carts | Per-user cart |
+| reviews | Product reviews |
+| categories | Product categories |
+| coupons | Discount codes |
+| stocknotifications | Back-in-stock alerts |
+
+---
+
+## Environment Variables
+
+```env
+PORT=5000
+NODE_ENV=production
+MONGODB_URI=<mongodb_atlas_uri>
+JWT_SECRET=<jwt_secret>
+
+# SendGrid
+EMAIL_FROM=<verified_sender_email>
+EMAIL_USER=apikey
+EMAIL_PASS=<sendgrid_api_key>
+
+# Payments
+RAZORPAY_KEY_ID=<razorpay_key_id>
+RAZORPAY_KEY_SECRET=<razorpay_key_secret>
+STRIPE_SECRET_KEY=<stripe_secret_key>
+STRIPE_PUBLISHABLE_KEY=<stripe_publishable_key>
+
+# AI
+GEMINI_API_KEY=<gemini_api_key>
+
+# CORS
+FRONTEND_URL=https://ecommerce-frontend-production-8d98.up.railway.app
+ALLOWED_ORIGINS=https://ecommerce-frontend-production-8d98.up.railway.app
+```
+
+---
+
+## Local Setup
+
+```bash
+npm install
+cp .env.example .env   # fill in your values
+node seed.js           # seed 11 sample products
+npm run dev            # starts on http://localhost:5000
+```
+
+---
+
+## Security Features
+
+- JWT stateless authentication
+- bcrypt password hashing
+- OTP email verification on register & password reset
+- Rate limiting (100 req / 15 min in production)
+- Helmet HTTP headers
+- CSRF protection on mutating routes
+- Joi input validation on all auth & product routes
+- CORS restricted to frontend origin
+
+---
+
+## Testing
+
+```bash
+npm test   # runs orderFlow.test.js
+```
+
+1 test file covering the full order flow (register → login → add to cart → checkout → order status).
+
+---
+
+## Deployment
+
+Deployed on **Railway** with Node 20 forced via `nixpacks.toml`.
+
+```toml
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+```
+
+---
+
+## License
 
 ISC
