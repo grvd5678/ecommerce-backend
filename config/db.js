@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import crypto from 'crypto';
 
 const connectDB = async () => {
   try {
@@ -26,3 +27,4 @@ const connectDB = async () => {
 };
 
 export default connectDB;
+
