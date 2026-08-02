@@ -1,18 +1,12 @@
-import nodemailer from "nodemailer";
 import sgMail from "@sendgrid/mail";
 import config from "../config/config.js";
 
 let initialized = false;
 
-const isSendGrid = config.emailUser === "apikey";
-
 const validateEmailConfig = () => {
   const missing = [];
   if (!config.emailPass) missing.push("EMAIL_PASS");
-  if (config.emailUser !== "apikey") {
-    if (!config.emailHost) missing.push("EMAIL_HOST");
-    if (!config.emailPort) missing.push("EMAIL_PORT");
-  }
+  if (!config.emailFrom) missing.push("EMAIL_FROM");
   if (missing.length) {
     throw new Error(`Missing required email config: ${missing.join(", ")}`);
   }
@@ -22,62 +16,29 @@ const getClient = () => {
   if (!initialized) {
     validateEmailConfig();
     sgMail.setApiKey(config.emailPass);
-    console.log("SendGrid client configured:", {
-      from: config.emailFrom,
-    });
     initialized = true;
   }
   return sgMail;
 };
 
-const initSendGrid = () => {
-  sgMail.setApiKey(config.emailPass);
-};
-
 const sendEmail = async (to, subject, html) => {
   try {
-    console.log("--- Email Sending Started ---");
-    console.log("Recipient:", to);
-
-    if (isSendGrid) {
-      initSendGrid();
-      console.log("Using SendGrid API for email delivery.");
-      const msg = {
-        to,
-        from: config.emailFrom || config.emailUser,
-        subject,
-        html,
-      };
-      const [response] = await sgMail.send(msg);
-      console.log("--- Email Sent Successfully via SendGrid ---", response.headers);
-      return response;
-    }
-
-    const transporter = getTransporter();
-    console.log("Transporter retrieved.");
-
-    console.log("Attempting to send email via SendGrid API...");
+    const client = getClient();
     const [response] = await client.send({
       to,
       from: config.emailFrom,
       subject,
       html,
     });
-
     console.log("--- Email Sent Successfully ---", response?.statusCode);
     return response;
   } catch (error) {
-    console.error("--- Email Send Failed ---");
-    console.error(
-      "Error details:",
-      error.response?.body || error.message,
-    );
+    console.error("--- Email Send Failed ---", error.response?.body || error.message);
     throw error;
   }
 };
 
 export const sendOTPEmail = async (email, name, otp) => {
-  console.log("--- sendOTPEmail called ---");
   const html = `
     <h2>Verify Your Account</h2>
     <p>Hi ${name},</p>
@@ -110,11 +71,14 @@ export const sendOrderConfirmation = (email, name, order) => {
 };
 
 export const verifyEmailTransporter = async () => {
-  if (isSendGrid) {
-    initSendGrid();
-    return true;
+  validateEmailConfig();
+  const response = await fetch("https://api.sendgrid.com/v3/user/account", {
+    method: "GET",
+    headers: { Authorization: `Bearer ${config.emailPass}` },
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`SendGrid API health check failed: ${response.status} ${body}`);
   }
-  const transporter = getTransporter();
-  await transporter.verify();
   return true;
 };
