@@ -2,13 +2,12 @@ import nodemailer from "nodemailer";
 import sgMail from "@sendgrid/mail";
 import config from "../config/config.js";
 
-let transporter = null;
+let initialized = false;
 
 const isSendGrid = config.emailUser === "apikey";
 
 const validateEmailConfig = () => {
   const missing = [];
-  if (!config.emailUser) missing.push("EMAIL_USER");
   if (!config.emailPass) missing.push("EMAIL_PASS");
   if (config.emailUser !== "apikey") {
     if (!config.emailHost) missing.push("EMAIL_HOST");
@@ -19,72 +18,16 @@ const validateEmailConfig = () => {
   }
 };
 
-const promiseWithTimeout = (promise, timeoutMs, timeoutMessage) =>
-  new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      reject(new Error(timeoutMessage));
-    }, timeoutMs);
-
-    promise
-      .then((value) => {
-        clearTimeout(timeout);
-        resolve(value);
-      })
-      .catch((error) => {
-        clearTimeout(timeout);
-        reject(error);
-      });
-  });
-
-const getDefaultTransportConfig = () => {
-  const host =
-    config.emailHost ||
-    (config.emailUser === "apikey" ? "smtp.sendgrid.net" : null);
-  const port = Number(config.emailPort || 587);
-  const useSecure = port === 465;
-
-  if (!host) {
-    throw new Error(
-      "Missing SMTP host. Set EMAIL_HOST or use SendGrid credentials with EMAIL_USER=apikey.",
-    );
-  }
-
-  if (config.emailUser === "apikey" && host.includes("gmail")) {
-    console.warn(
-      "SMTP warning: using SendGrid API key credentials with a Gmail host is likely incorrect.",
-    );
-  }
-
-  return {
-    host,
-    port,
-    secure: useSecure,
-    auth: {
-      user: config.emailUser,
-      pass: config.emailPass,
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 20000,
-    tls: {
-      rejectUnauthorized: false,
-    },
-  };
-};
-
-const getTransporter = () => {
-  if (!transporter) {
+const getClient = () => {
+  if (!initialized) {
     validateEmailConfig();
-    const transportConfig = getDefaultTransportConfig();
-    console.log("SMTP transport config:", {
-      host: transportConfig.host,
-      port: transportConfig.port,
-      secure: transportConfig.secure,
-      user: transportConfig.auth.user,
+    sgMail.setApiKey(config.emailPass);
+    console.log("SendGrid client configured:", {
+      from: config.emailFrom,
     });
-    transporter = nodemailer.createTransport(transportConfig);
+    initialized = true;
   }
-  return transporter;
+  return sgMail;
 };
 
 const initSendGrid = () => {
@@ -113,30 +56,22 @@ const sendEmail = async (to, subject, html) => {
     const transporter = getTransporter();
     console.log("Transporter retrieved.");
 
-    console.log("Verifying SMTP connection...");
-    await promiseWithTimeout(
-      transporter.verify(),
-      10000,
-      "SMTP verification timed out after 10 seconds",
-    );
+    console.log("Attempting to send email via SendGrid API...");
+    const [response] = await client.send({
+      to,
+      from: config.emailFrom,
+      subject,
+      html,
+    });
 
-    console.log("Attempting to send email via sendMail...");
-    const info = await promiseWithTimeout(
-      transporter.sendMail({
-        from: config.emailFrom || config.emailUser,
-        to,
-        subject,
-        html,
-      }),
-      20000,
-      "Email send timed out after 20 seconds",
-    );
-
-    console.log("--- Email Sent Successfully ---", info.messageId);
-    return info;
+    console.log("--- Email Sent Successfully ---", response?.statusCode);
+    return response;
   } catch (error) {
     console.error("--- Email Send Failed ---");
-    console.error("Error details:", error.message);
+    console.error(
+      "Error details:",
+      error.response?.body || error.message,
+    );
     throw error;
   }
 };
@@ -173,6 +108,7 @@ export const sendOrderConfirmation = (email, name, order) => {
   `;
   return sendEmail(email, "Order Confirmed", html);
 };
+
 export const verifyEmailTransporter = async () => {
   if (isSendGrid) {
     initSendGrid();
