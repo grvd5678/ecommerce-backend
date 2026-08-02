@@ -20,6 +20,7 @@
     "dotenv": "^17.3.1",
     "dotenv-safe": "^9.1.0",
     "express": "^5.2.1",
+    "@sendgrid/mail": "^8.1.0",
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
     "joi": "^18.2.3",
