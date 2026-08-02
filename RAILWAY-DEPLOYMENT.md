@@ -23,16 +23,16 @@ Use this file to deploy the backend to Railway after canceling the stuck Render 
 Add these variables in Railway's Environment section:
 
 - `PORT` = `5000`
-- `MONGODB_URI` = `<your MongoDB connection string>`
-- `JWT_SECRET` = `<your jwt secret>`
-- `EMAIL_FROM` = `<sender email>`
+- `MONGODB_URI` = `<your-mongodb-connection-string>`
+- `JWT_SECRET` = `<your-jwt-secret>`
+- `EMAIL_FROM` = `<sender-email>`
 - `EMAIL_USER` = `apikey` (if using SendGrid) or SMTP user
-- `EMAIL_PASS` = `<SendGrid API key or SMTP password>`
+- `EMAIL_PASS` = `<sendgrid-api-key-or-smtp-password>`
 - `EMAIL_PORT` = `587`
 - `EMAIL_HOST` = `smtp.sendgrid.net` (if using SendGrid) or your SMTP host
-- `FRONTEND_URL` = `https://<frontend-host>` or `http://localhost:5173`
-- `STRIPE_SECRET_KEY` = `<stripe secret key>`
-- `STRIPE_PUBLISHABLE_KEY` = `<stripe publishable key>`
+- `FRONTEND_URL` = `https://<your-frontend-host>` or `http://localhost:5173`
+- `STRIPE_SECRET_KEY` = `<your-stripe-secret-key>`
+- `STRIPE_PUBLISHABLE_KEY` = `<your-stripe-publishable-key>`
 
 ## 4. Start command
 
