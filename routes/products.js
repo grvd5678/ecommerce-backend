@@ -7,11 +7,12 @@ import { productValidationSchema } from '../validation/productValidation.js';
 
 const router = express.Router();
 
-router.get('/', getProducts);
-router.get('/categories', getCategories);
+// Define specific routes BEFORE parameterized routes to avoid conflicts
 router.get('/categories/counts', getCategoryCounts);
-router.get('/:id', getProduct);
+router.get('/categories', getCategories);
 router.get('/:id/similar', getSimilarProducts);
+router.get('/', getProducts);
+router.get('/:id', getProduct);
 router.post('/', (req, res, next) => {
   console.log('Post products route called');
   next();
