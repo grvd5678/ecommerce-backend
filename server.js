@@ -95,6 +95,8 @@ app.get("/version", (req, res) => {
     deploy: "temporary-version-check",
     route: "/version",
   });
+});
+
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
