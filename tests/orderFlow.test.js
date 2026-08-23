@@ -1,21 +1,22 @@
 import { app } from './setup.js';
 import request from 'supertest';
-import { Product } from '../models/AdvancedProduct.js';
-import User from '../models/User.js';
 
-describe('Inventory & Order Flow', () => {
-  let authToken;
-  let testProduct;
-
-  beforeAll(async () => {
-    // Setup a user and product
-    const user = await User.create({ name: 'Test User', email: 'test@example.com', password: 'password123', isVerified: true });
-    testProduct = await Product.create({ name: 'Laptop', description: 'Test', price: 1000, category: 'Electronics', image: 'test.jpg', stock: 10 });
-    
-    // Get token (mocking or real auth flow)
+describe('ShopHub API Integration Suite', () => {
+  test('GET /health should return 200 and status ok', async () => {
+    const res = await request(app).get('/health');
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ status: 'ok' });
   });
 
-  test('should reduce stock when order is placed', async () => {
-    // ... test logic
+  test('GET / should return running message', async () => {
+    const res = await request(app).get('/');
+    expect(res.statusCode).toBe(200);
+    expect(res.body.message).toContain('E-Commerce API is running');
+  });
+
+  test('GET /api/products should return product list', async () => {
+    const res = await request(app).get('/api/products');
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('products');
   });
 });

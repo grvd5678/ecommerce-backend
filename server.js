@@ -24,7 +24,9 @@ export const app = express();
 // Trust the proxy (Render uses a proxy)
 app.set("trust proxy", 1);
 
-connectDB();
+if (process.env.NODE_ENV !== "test") {
+  connectDB();
+}
 
 setupSwagger(app);
 
@@ -112,3 +114,5 @@ if (process.env.NODE_ENV !== "test") {
     console.log(`🚀 Server running on port ${PORT}`);
   });
 }
+
+export default app;
