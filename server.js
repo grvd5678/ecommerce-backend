@@ -95,6 +95,8 @@ app.get("/version", (req, res) => {
     deploy: "temporary-version-check",
     route: "/version",
   });
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
 });
 
 app.use(globalErrorHandler);
@@ -103,7 +105,7 @@ console.log("--- SERVER IS RUNNING AND LOGGING ---");
 
 if (process.env.NODE_ENV !== "test") {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Server running on port ${PORT}`);
   });
 }
