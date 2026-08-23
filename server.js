@@ -45,6 +45,7 @@ app.use(
       if (
         !origin ||
         allowedOrigins.includes(origin) ||
+        origin.endsWith('.onrender.com') ||
         origin.endsWith('.vercel.app') ||
         origin.includes('localhost')
       ) {
