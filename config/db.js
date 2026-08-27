@@ -1,4 +1,12 @@
 import mongoose from 'mongoose';
+import dns from 'node:dns';
+
+// Ensure reliable DNS resolution for MongoDB Atlas SRV records
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (e) {
+  // Ignore in environments where setServers is restricted
+}
 
 const connectDB = async () => {
   try {
