@@ -38,11 +38,11 @@ export const register = async (req, res) => {
     console.log(`🔑 REGISTRATION OTP FOR ${email}: >>> [ ${otp} ] <<<`);
     console.log("=================================================");
 
-    try {
-      await sendOTPEmail(email, name, otp);
-    } catch (emailErr) {
-      console.error("❌ Email service error on register (Cloud SMTP blocked or provider error):", emailErr.message);
-    }
+    sendOTPEmail(email, name, otp)
+      .then(() => console.log("✅ Registration OTP email sent successfully"))
+      .catch((emailErr) => {
+        console.error("❌ Email service error on register (Cloud SMTP blocked or provider error):", emailErr.message);
+      });
 
     res.status(201).json({
       message: "OTP sent! Check your email or your server logs for the code.",
@@ -110,11 +110,11 @@ export const resendOTP = async (req, res) => {
     console.log(`🔑 RESEND OTP FOR ${email}: >>> [ ${otp} ] <<<`);
     console.log("=================================================");
 
-    try {
-      await sendOTPEmail(email, user.name, otp);
-    } catch (emailErr) {
-      console.error("❌ Email service error on resendOTP:", emailErr.message);
-    }
+    sendOTPEmail(email, user.name, otp)
+      .then(() => console.log("✅ Resend OTP email sent successfully"))
+      .catch((emailErr) => {
+        console.error("❌ Email service error on resendOTP:", emailErr.message);
+      });
 
     res.json({ message: "New OTP sent! Check your email or server logs." });
   } catch (error) {
@@ -192,20 +192,17 @@ export const forgotPassword = async (req, res) => {
     console.log(`🔑 OTP CODE FOR ${email}: >>> [ ${otp} ] <<<`);
     console.log("=================================================");
 
-    console.log("Attempting to send OTP email...");
-    try {
-      await sendOTPEmail(email, user.name, otp);
-      console.log("OTP email sent successfully");
-      return res.json({ message: "OTP sent to your email.", email });
-    } catch (emailErr) {
-      console.error("❌ Email service error (Cloud SMTP blocked or provider error):", emailErr.message);
-      // On cloud hosting (like Render free tier) where SMTP ports are blocked,
-      // allow the user to continue using the OTP logged above in Render Logs!
-      return res.json({
-        message: "OTP generated! Check your email or your Render server logs for the code.",
-        email
+    console.log("Dispatching OTP email in background...");
+    sendOTPEmail(email, user.name, otp)
+      .then(() => console.log("✅ OTP email sent successfully"))
+      .catch((emailErr) => {
+        console.error("❌ Email service error (Cloud SMTP blocked or provider error):", emailErr.message);
       });
-    }
+
+    return res.json({
+      message: "OTP sent! Check your email or server logs for the code.",
+      email,
+    });
   } catch (error) {
     console.error("Error in forgotPassword:", error);
     res.status(500).json({ message: error.message });
