@@ -4,7 +4,7 @@ import config from "../config/config.js";
 
 let transporter = null;
 
-const isSendGrid = config.emailUser === "apikey" || config.emailPass?.startsWith("SG.");
+const isSendGrid = Boolean(config.emailPass?.startsWith("SG."));
 
 const getMailer = () => {
   if (isSendGrid) {
@@ -18,15 +18,35 @@ const getMailer = () => {
   }
 
   if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: config.emailHost || "smtp.gmail.com",
-      port: Number(config.emailPort) || 465,
-      secure: Number(config.emailPort) === 465,
-      auth: {
-        user: config.emailUser || config.emailFrom,
-        pass: config.emailPass,
-      },
-    });
+    const isGmail =
+      config.emailHost?.includes("gmail") ||
+      config.emailFrom?.includes("gmail") ||
+      !isSendGrid;
+
+    const emailUser =
+      config.emailUser && config.emailUser !== "apikey"
+        ? config.emailUser
+        : config.emailFrom;
+
+    transporter = nodemailer.createTransport(
+      isGmail
+        ? {
+            service: "gmail",
+            auth: {
+              user: emailUser,
+              pass: config.emailPass,
+            },
+          }
+        : {
+            host: config.emailHost || "smtp.gmail.com",
+            port: Number(config.emailPort) || 465,
+            secure: Number(config.emailPort) === 465,
+            auth: {
+              user: emailUser,
+              pass: config.emailPass,
+            },
+          }
+    );
   }
 
   return {
