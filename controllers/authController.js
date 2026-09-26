@@ -105,9 +105,18 @@ export const resendOTP = async (req, res) => {
     const otp = generateOTP();
     user.otp = { code: otp, expiresAt: new Date(Date.now() + 10 * 60 * 1000) };
     await user.save();
-    await sendOTPEmail(email, user.name, otp);
 
-    res.json({ message: "New OTP sent to your email." });
+    console.log("=================================================");
+    console.log(`🔑 RESEND OTP FOR ${email}: >>> [ ${otp} ] <<<`);
+    console.log("=================================================");
+
+    try {
+      await sendOTPEmail(email, user.name, otp);
+    } catch (emailErr) {
+      console.error("❌ Email service error on resendOTP:", emailErr.message);
+    }
+
+    res.json({ message: "New OTP sent! Check your email or server logs." });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -165,13 +174,19 @@ export const changePassword = async (req, res) => {
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    console.log("Forgot password requested for:", email); // Log 1
+    console.log("Forgot password requested for:", email);
 
     const user = await User.findOne({ email });
-    if (!user)
+    if (!user) {
       return res
         .status(404)
         .json({ message: "No account found with this email" });
+    }
+
+    const otp = generateOTP();
+    user.otp = { code: otp, expiresAt: new Date(Date.now() + 10 * 60 * 1000) };
+    await user.save();
+    console.log("OTP saved to database");
 
     console.log("=================================================");
     console.log(`🔑 OTP CODE FOR ${email}: >>> [ ${otp} ] <<<`);

@@ -5,8 +5,35 @@ import config from "../config/config.js";
 let transporter = null;
 
 const isSendGrid = Boolean(config.emailPass?.startsWith("SG."));
+const resendApiKey = process.env.RESEND_API_KEY || (config.emailPass?.startsWith("re_") ? config.emailPass : null);
 
 const getMailer = () => {
+  if (resendApiKey) {
+    return {
+      send: async ({ to, from, subject, html }) => {
+        const fromAddress = from && !from.includes("gmail.com") ? from : "onboarding@resend.dev";
+        const response = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: `ShopHub <${fromAddress}>`,
+            to: Array.isArray(to) ? to : [to],
+            subject,
+            html,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to send email via Resend");
+        }
+        return data;
+      },
+    };
+  }
+
   if (isSendGrid) {
     sgMail.setApiKey(config.emailPass);
     return {
@@ -36,6 +63,9 @@ const getMailer = () => {
               user: emailUser,
               pass: config.emailPass,
             },
+            connectionTimeout: 5000,
+            greetingTimeout: 5000,
+            socketTimeout: 5000,
           }
         : {
             host: config.emailHost || "smtp.gmail.com",
@@ -45,6 +75,9 @@ const getMailer = () => {
               user: emailUser,
               pass: config.emailPass,
             },
+            connectionTimeout: 5000,
+            greetingTimeout: 5000,
+            socketTimeout: 5000,
           }
     );
   }
