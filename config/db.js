@@ -10,12 +10,14 @@ try {
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+    const isAtlas = process.env.MONGODB_URI?.includes('mongodb+srv');
+    const options = {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-      tls: true,
-      tlsAllowInvalidCertificates: false
-    });
+      ...(isAtlas ? { tls: true, tlsAllowInvalidCertificates: false } : {})
+    };
+
+    const conn = await mongoose.connect(process.env.MONGODB_URI, options);
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
 

@@ -1,36 +1,56 @@
 import sgMail from "@sendgrid/mail";
+import nodemailer from "nodemailer";
 import config from "../config/config.js";
 
-let initialized = false;
+let transporter = null;
 
-const validateEmailConfig = () => {
-  const missing = [];
-  if (!config.emailPass) missing.push("EMAIL_PASS");
-  if (!config.emailFrom) missing.push("EMAIL_FROM");
-  if (missing.length) {
-    throw new Error(`Missing required email config: ${missing.join(", ")}`);
-  }
-};
+const isSendGrid = config.emailUser === "apikey" || config.emailPass?.startsWith("SG.");
 
-const getClient = () => {
-  if (!initialized) {
-    validateEmailConfig();
+const getMailer = () => {
+  if (isSendGrid) {
     sgMail.setApiKey(config.emailPass);
-    initialized = true;
+    return {
+      send: async ({ to, from, subject, html }) => {
+        const [response] = await sgMail.send({ to, from, subject, html });
+        return response;
+      },
+    };
   }
-  return sgMail;
+
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: config.emailHost || "smtp.gmail.com",
+      port: Number(config.emailPort) || 465,
+      secure: Number(config.emailPort) === 465,
+      auth: {
+        user: config.emailUser || config.emailFrom,
+        pass: config.emailPass,
+      },
+    });
+  }
+
+  return {
+    send: async ({ to, from, subject, html }) => {
+      return await transporter.sendMail({
+        from: `ShopHub <${from}>`,
+        to,
+        subject,
+        html,
+      });
+    },
+  };
 };
 
 const sendEmail = async (to, subject, html) => {
   try {
-    const client = getClient();
-    const [response] = await client.send({
+    const mailer = getMailer();
+    const response = await mailer.send({
       to,
       from: config.emailFrom,
       subject,
       html,
     });
-    console.log("--- Email Sent Successfully ---", response?.statusCode);
+    console.log("--- Email Sent Successfully ---");
     return response;
   } catch (error) {
     console.error("--- Email Send Failed ---", error.response?.body || error.message);

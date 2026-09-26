@@ -34,7 +34,15 @@ export const register = async (req, res) => {
       });
     }
 
-    await sendOTPEmail(email, name, otp);
+    try {
+      await sendOTPEmail(email, name, otp);
+    } catch (emailErr) {
+      console.error("❌ SendGrid email error on register:", emailErr.message);
+      console.log(`🔑 [OTP FALLBACK for register] Email: ${email} | OTP: ${otp}`);
+      return res.status(500).json({
+        message: "Email service failed: SendGrid API key is expired or credits exceeded. Please update SendGrid API key."
+      });
+    }
 
     res
       .status(201)
@@ -174,8 +182,16 @@ export const forgotPassword = async (req, res) => {
     console.log("OTP saved to database"); // Log 2
 
     console.log("Attempting to send OTP email..."); // Log 3
-    await sendOTPEmail(email, user.name, otp);
-    console.log("OTP email sent successfully"); // Log 4
+    try {
+      await sendOTPEmail(email, user.name, otp);
+      console.log("OTP email sent successfully");
+    } catch (emailErr) {
+      console.error("❌ SendGrid email error:", emailErr.message);
+      console.log(`🔑 [OTP FALLBACK for testing] Email: ${email} | OTP: ${otp}`);
+      return res.status(500).json({
+        message: "Email service failed: SendGrid API key is expired or credits exceeded. Please update SendGrid API key."
+      });
+    }
 
     res.json({ message: "OTP sent to your email.", email });
   } catch (error) {
