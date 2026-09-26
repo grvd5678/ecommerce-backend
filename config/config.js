@@ -27,6 +27,7 @@ const config = {
   emailPort: process.env.EMAIL_PORT,
   emailUser: envEmailUser,
   emailPass: envEmailPass,
+  resendApiKey: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.trim() : "",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY,
   stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
   rateLimitWindow: 15 * 60 * 1000,
@@ -37,7 +38,10 @@ const config = {
 
 const requiredEnvVars = ["MONGODB_URI", "JWT_SECRET"];
 if (process.env.NODE_ENV === "production") {
-  requiredEnvVars.push("EMAIL_FROM", "EMAIL_PASS");
+  const hasResend = Boolean(process.env.RESEND_API_KEY || (envEmailPass && envEmailPass.startsWith("re_")));
+  if (!hasResend && (!process.env.EMAIL_PASS || !process.env.EMAIL_FROM)) {
+    requiredEnvVars.push("EMAIL_FROM", "EMAIL_PASS");
+  }
 }
 
 const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);

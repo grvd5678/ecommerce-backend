@@ -5,17 +5,26 @@ import config from "../config/config.js";
 let transporter = null;
 
 const isSendGrid = Boolean(config.emailPass?.startsWith("SG."));
-const resendApiKey = process.env.RESEND_API_KEY || (config.emailPass?.startsWith("re_") ? config.emailPass : null);
 
 const getMailer = () => {
-  if (resendApiKey) {
+  const activeResendKey =
+    process.env.RESEND_API_KEY?.trim() ||
+    config.resendApiKey?.trim() ||
+    (config.emailPass?.startsWith("re_") ? config.emailPass.trim() : null);
+
+  if (activeResendKey) {
     return {
       send: async ({ to, from, subject, html }) => {
-        const fromAddress = from && !from.includes("gmail.com") ? from : "onboarding@resend.dev";
+        const fromAddress =
+          from && !from.includes("gmail.com") && !from.includes("localhost")
+            ? from
+            : "onboarding@resend.dev";
+
+        console.log(`[Resend] Sending email from: "${fromAddress}" to: "${to}"`);
         const response = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${resendApiKey}`,
+            Authorization: `Bearer ${activeResendKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -27,8 +36,10 @@ const getMailer = () => {
         });
         const data = await response.json();
         if (!response.ok) {
-          throw new Error(data.message || "Failed to send email via Resend");
+          console.error("[Resend Error Response]", data);
+          throw new Error(data.message || JSON.stringify(data));
         }
+        console.log("✅ [Resend Success] Email delivered successfully! Email ID:", data.id);
         return data;
       },
     };
