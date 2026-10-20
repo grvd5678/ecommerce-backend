@@ -2,6 +2,7 @@ import { Product } from '../models/AdvancedProduct.js';
 import Category from '../models/Category.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import AppError from '../utils/AppError.js';
+import { invalidateCachePattern } from '../config/redis.js';
 
 export const getCategories = asyncHandler(async (req, res, next) => {
   const categories = await Category.find();
@@ -101,22 +102,24 @@ export const getProduct = asyncHandler(async (req, res, next) => {
   if (!product) return next(new AppError('Product not found', 404));
   res.json(product);
 });
-// ... (rest of methods)
 
 export const createProduct = asyncHandler(async (req, res, next) => {
   const product = await Product.create(req.body);
+  await invalidateCachePattern('products:*');
   res.status(201).json(product);
 });
 
 export const updateProduct = asyncHandler(async (req, res, next) => {
   const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
   if (!product) return next(new AppError('Product not found', 404));
+  await invalidateCachePattern('products:*');
   res.json(product);
 });
 
 export const deleteProduct = asyncHandler(async (req, res, next) => {
   const product = await Product.findByIdAndDelete(req.params.id);
   if (!product) return next(new AppError('Product not found', 404));
+  await invalidateCachePattern('products:*');
   res.json({ message: 'Product deleted' });
 });
 

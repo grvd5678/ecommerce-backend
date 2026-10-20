@@ -5,11 +5,12 @@ import { Product } from '../models/AdvancedProduct.js';
 import Category from '../models/Category.js';
 import { protect, admin } from '../middleware/auth.js';
 import csrfProtection from '../middleware/csrfProtection.js';
+import { cacheResponse } from '../middleware/cache.js';
 
 const router = express.Router();
 
-// GET /api/admin/analytics - Aggregated business intelligence & charts data
-router.get('/analytics', protect, admin, async (req, res) => {
+// GET /api/admin/analytics - Aggregated business intelligence & charts data (Cached for 2 minutes)
+router.get('/analytics', protect, admin, cacheResponse(120, 'admin:analytics'), async (req, res) => {
   try {
     const days = parseInt(req.query.days) || 30;
     const startDate = new Date();
@@ -108,8 +109,8 @@ router.get('/analytics', protect, admin, async (req, res) => {
       }
     ]);
 
-    // 5. Category Distribution
-    const categoryStats = await Product.aggregate([
+    // 5. Category Breakdown
+    const categoryBreakdown = await Product.aggregate([
       {
         $lookup: {
           from: 'categories',
@@ -118,21 +119,22 @@ router.get('/analytics', protect, admin, async (req, res) => {
           as: 'categoryInfo'
         }
       },
-      { $unwind: { path: '$categoryInfo', preserveNullAndEmptyArrays: true } },
+      { $unwind: '$categoryInfo' },
       {
         $group: {
           _id: '$categoryInfo.name',
-          count: { $sum: 1 }
+          count: { $sum: 1 },
+          totalStock: { $sum: '$stock' }
         }
       },
       {
         $project: {
           _id: 0,
-          name: { $ifNull: ['$_id', 'Uncategorized'] },
-          count: 1
+          category: '$_id',
+          count: 1,
+          totalStock: 1
         }
-      },
-      { $sort: { count: -1 } }
+      }
     ]);
 
     res.json({
@@ -146,28 +148,19 @@ router.get('/analytics', protect, admin, async (req, res) => {
       salesOverTime,
       orderStatusBreakdown,
       topProducts,
-      categoryStats
+      categoryBreakdown
     });
   } catch (error) {
-    console.error('Analytics Error:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching admin analytics:', error);
+    res.status(500).json({ message: 'Error fetching analytics data' });
   }
 });
 
+// User Management Routes
 router.get('/users', protect, admin, async (req, res) => {
   try {
-    const users = await User.find().sort({ createdAt: -1 });
+    const users = await User.find({}).select('-password');
     res.json(users);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-router.put('/users/:id/role', protect, admin, csrfProtection, async (req, res) => {
-  try {
-    const user = await User.findByIdAndUpdate(req.params.id, { role: req.body.role }, { new: true });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -175,9 +168,46 @@ router.put('/users/:id/role', protect, admin, csrfProtection, async (req, res) =
 
 router.delete('/users/:id', protect, admin, csrfProtection, async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    res.json({ message: 'User deleted' });
+    if (user.role === 'admin') return res.status(400).json({ message: 'Cannot delete admin user' });
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: 'User removed' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.put('/users/:id/role', protect, admin, csrfProtection, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    user.role = req.body.role || user.role;
+    await user.save();
+    res.json({ message: 'User role updated', user: { _id: user._id, name: user.name, role: user.role } });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Order Management Routes
+router.get('/orders', protect, admin, async (req, res) => {
+  try {
+    const orders = await Order.find({}).populate('user', 'id name email').sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.put('/orders/:id/status', protect, admin, csrfProtection, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    order.status = req.body.status || order.status;
+    if (req.body.status === 'delivered') order.deliveredAt = Date.now();
+    await order.save();
+    res.json(order);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

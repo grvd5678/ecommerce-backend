@@ -4,14 +4,15 @@ import { protect, admin } from '../middleware/auth.js';
 import csrfProtection from '../middleware/csrfProtection.js';
 import { validate } from '../middleware/validate.js';
 import { productValidationSchema } from '../validation/productValidation.js';
+import { cacheResponse } from '../middleware/cache.js';
 
 const router = express.Router();
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Define specific routes BEFORE parameterized routes to avoid conflicts
-router.get('/categories/counts', getCategoryCounts);
-router.get('/categories', getCategories);
+router.get('/categories/counts', cacheResponse(600, 'categories:counts'), getCategoryCounts);
+router.get('/categories', cacheResponse(600, 'categories:list'), getCategories);
 router.post('/generate-description', protect, admin, async (req, res) => {
   const { name, category, keywords } = req.body;
   if (!name) return res.status(400).json({ message: 'Product name is required' });
@@ -45,13 +46,17 @@ Requirements:
     });
   }
 });
-router.get('/:id/similar', getSimilarProducts);
-router.get('/', getProducts);
-router.get('/:id', getProduct);
+
+// Cache product queries for 3 minutes (180s)
+router.get('/:id/similar', cacheResponse(300, 'products:similar'), getSimilarProducts);
+router.get('/', cacheResponse(180, 'products'), getProducts);
+router.get('/:id', cacheResponse(300, 'products:detail'), getProduct);
+
 router.post('/', (req, res, next) => {
   console.log('Post products route called');
   next();
 }, protect, admin, csrfProtection, validate(productValidationSchema), createProduct);
+
 router.put('/:id', protect, admin, csrfProtection, validate(productValidationSchema), updateProduct);
 router.delete('/:id', protect, admin, csrfProtection, deleteProduct);
 
