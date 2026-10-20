@@ -32,6 +32,7 @@
     "morgan": "^1.11.0",
     "nodemailer": "^9.0.3",
     "razorpay": "^2.9.6",
+    "socket.io": "^4.8.4",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.19.0",

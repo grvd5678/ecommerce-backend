@@ -1,4 +1,6 @@
 import express from "express";
+import http from "http";
+import { Server } from "socket.io";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -18,8 +20,10 @@ import couponRoutes from "./routes/coupons.js";
 import engagementRoutes from "./routes/engagement.js";
 import chatRoutes from "./routes/chat.js";
 import { verifyEmailTransporter } from "./utils/email.js";
+import { setupSocketServer } from "./utils/socketServer.js";
 
 export const app = express();
+export const httpServer = http.createServer(app);
 
 // Trust the proxy (Render uses a proxy)
 app.set("trust proxy", 1);
@@ -36,28 +40,42 @@ app.use(
     stream: { write: (message) => logger.info(message.trim()) },
   }),
 );
+
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:5173",
   ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(",") : []),
 ];
 
+const corsOriginCheck = (origin, callback) => {
+  if (
+    !origin ||
+    allowedOrigins.includes(origin) ||
+    origin.endsWith('.onrender.com') ||
+    origin.endsWith('.vercel.app') ||
+    origin.includes('localhost')
+  ) {
+    return callback(null, true);
+  }
+  callback(new Error("Not allowed by CORS"));
+};
+
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (
-        !origin ||
-        allowedOrigins.includes(origin) ||
-        origin.endsWith('.onrender.com') ||
-        origin.endsWith('.vercel.app') ||
-        origin.includes('localhost')
-      ) {
-        return callback(null, true);
-      }
-      callback(new Error("Not allowed by CORS"));
-    },
+    origin: corsOriginCheck,
     credentials: true,
   }),
 );
+
+// Socket.io WebSocket server
+export const io = new Server(httpServer, {
+  cors: {
+    origin: corsOriginCheck,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+setupSocketServer(io);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -79,7 +97,7 @@ app.use("/api/engagement", engagementRoutes);
 app.use("/api/chat", chatRoutes);
 
 app.get("/", (req, res) => {
-  res.json({ message: "🚀 E-Commerce API is running!" });
+  res.json({ message: "🚀 E-Commerce API is running with WebSockets!" });
 });
 
 app.get("/ready", async (req, res) => {
@@ -110,8 +128,8 @@ console.log("--- SERVER IS RUNNING AND LOGGING ---");
 
 if (process.env.NODE_ENV !== "test") {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+  httpServer.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Server running on port ${PORT} with Socket.io real-time support`);
   });
 }
 
